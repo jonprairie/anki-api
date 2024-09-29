@@ -1,10 +1,8 @@
 ;;; anki-api.el --- Wrapper library around AnkiConnect api -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2018-2022 Lei Tan <louietanlei[at]gmail[dot]com>
-
-;; Author: Lei Tan
-;; Version: 0.3.3
-;; URL: https://github.com/anki-editor/anki-editor
+;; Author: Jonathan Prairie
+;; Version: 0.0.1
+;; URL: https://github.com/jonprairie/anki-api
 ;; Package-Requires: ((emacs "28.0"))
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -22,7 +20,7 @@
 
 ;;; Commentary:
 ;;
-;;  Wrapper library around the AnkiConnect, a plugin for anki that exposes
+;;  Wrapper library around AnkiConnect, a plugin for anki that exposes
 ;;  an http api for interacting with anki in various ways.
 ;;
 ;;  For this package to work, you have to setup these external dependencies:
@@ -160,8 +158,21 @@ for more info see: https://foosoft.net/projects/anki-connect/index.html"
         (let* ((post-process (anki-api-request-post-process request))
                (processed (if post-process (funcall post-process .result) .result))
                (on-success (anki-api-request-on-success request))
-               (processed (if on-success (funcall on-success processed) processed)))
+               (processed (if on-success
+                              (funcall on-success
+                                       processed
+                                       (anki-api-request-context request))
+                            processed)))
           processed)))))
+
+(defun anki-api-dispatch-all (requests)
+  (let* ((requests-plist (--map (anki-api-build-request-plist
+                                 (anki-api-request-action it)
+                                 (anki-api-request-params it))
+                                requests))
+         (request (list 'action "multi" 'version 6
+                        'params (list 'actions requests-plist))))
+    (anki-api-dispatch request)))
 
 
 ;;; AnkiConnect api wrapper
